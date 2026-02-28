@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+<<<<<<< HEAD
 from db import db
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -64,3 +65,19 @@ def update_stage(lead_id: str, data: dict):
         "modified": result.modified_count
     }
 
+=======
+from db import leads_collection
+
+router = APIRouter()
+
+# 🔥 ADD CUSTOMER / LEAD
+@router.post("/leads")
+async def create_lead(lead: dict):
+
+    result = leads_collection.insert_one(lead)
+
+    return {
+        "message": "Lead added successfully",
+        "id": str(result.inserted_id)
+    }
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca

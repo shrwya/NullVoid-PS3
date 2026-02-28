@@ -1,9 +1,15 @@
+<<<<<<< HEAD
 import { Alert, Badge, SectionHead, ScoreChip, Tabs, Modal, Field } from '../../components/ui'
 import { PIPELINE_STAGES } from '../../store/useStore'
 import React, { useState, useEffect } from 'react'
 
 
 
+=======
+import React, { useState } from 'react'
+import { Alert, Badge, SectionHead, ScoreChip, Tabs, Modal, Field } from '../../components/ui'
+import { useStore, PIPELINE_STAGES } from '../../store/useStore'
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
 
 function getFollowUpSuggestion(lead) {
   if (lead.stage === 'Food Tasting' && lead.lastContact >= 3)
@@ -32,8 +38,12 @@ function getWhatsAppTemplate(stage) {
 }
 
 export default function SalesPortal() {
+<<<<<<< HEAD
 
 const [leads, setLeads] = useState([])
+=======
+  const { leads, updateLeadStage, addLead } = useStore()
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
   const [tab, setTab] = useState('pipeline')
   const [selectedLead, setSelectedLead] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -44,6 +54,7 @@ const [leads, setLeads] = useState([])
     return acc
   }, {})
 
+<<<<<<< HEAD
   useEffect(() => {
   loadLeads()
 }, [])
@@ -78,6 +89,8 @@ const updateLeadStage = async (id, stage) => {
   }
 }
 
+=======
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
   const tabs = [
     { id: 'pipeline',  icon: '📋', label: 'Pipeline' },
     { id: 'leads',     icon: '👤', label: 'All Leads' },
@@ -114,7 +127,11 @@ const updateLeadStage = async (id, stage) => {
                   <span className="kanban-count">{(byStage[stage] || []).length}</span>
                 </div>
                 {(byStage[stage] || []).map((lead) => (
+<<<<<<< HEAD
                   <div key={lead._id} className="kanban-card" onClick={() => setSelectedLead(lead)}>
+=======
+                  <div key={lead.id} className="kanban-card" onClick={() => setSelectedLead(lead)}>
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
                     <div className="text-[12px] font-semibold text-slate-200 mb-0.5">{lead.name}</div>
                     <div className="text-[11px] text-slate-500">{lead.contact}</div>
                     <div className="text-[11px] text-slate-500">👥 {lead.guests} • ₹{Math.round(lead.budget / 100000)}L</div>
@@ -273,6 +290,7 @@ const updateLeadStage = async (id, stage) => {
                   ))}
                 </tr>
               </thead>
+<<<<<<< HEAD
              <tbody>
   {[...leads]
     .sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -337,6 +355,42 @@ const updateLeadStage = async (id, stage) => {
       </tr>
     ))}
 </tbody>
+=======
+              <tbody>
+                {leads.map((lead) => (
+                  <tr key={lead.id} className="cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                    <td className="font-medium text-slate-200">{lead.name}</td>
+                    <td>{lead.contact}</td>
+                    <td><Badge type="blue">{lead.event}</Badge></td>
+                    <td>{lead.date}</td>
+                    <td>{lead.guests}</td>
+                    <td>₹{Math.round(lead.budget / 1000)}K</td>
+                    <td>
+                      <Badge type={
+                        ['Advance Paid', 'Menu Finalized', 'Converted'].includes(lead.stage) ? 'green' :
+                        lead.stage === 'Lost' ? 'red' :
+                        lead.stage === 'New' ? 'gray' : 'orange'
+                      }>{lead.stage}</Badge>
+                    </td>
+                    <td><ScoreChip score={lead.score} /></td>
+                    <td>
+                      <span style={{ color: lead.lastContact > 5 ? '#ef4444' : lead.lastContact > 2 ? '#f97316' : '#94a3b8' }}>
+                        {lead.lastContact === 0 ? 'Today' : `${lead.lastContact}d ago`}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button className="btn btn-ghost btn-xs" onClick={() => setSelectedLead(lead)}>👁</button>
+                        <button className="btn btn-whatsapp btn-xs"
+                          onClick={() => alert('WhatsApp sent:\n\n' + getWhatsAppTemplate(lead.stage))}>
+                          💬
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
             </table>
           </div>
         </div>
@@ -384,7 +438,11 @@ const updateLeadStage = async (id, stage) => {
                 </thead>
                 <tbody>
                   {[...leads].sort((a, b) => b.score - a.score).map((lead) => (
+<<<<<<< HEAD
                     <tr key={lead._id}>
+=======
+                    <tr key={lead.id}>
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
                       <td className="font-medium text-slate-200">{lead.name}</td>
                       <td><Badge type="gray">{lead.stage}</Badge></td>
                       <td>₹{Math.round(lead.budget / 1000)}K</td>
@@ -454,6 +512,7 @@ const updateLeadStage = async (id, stage) => {
             </div>
 
             {/* Move stage */}
+<<<<<<< HEAD
            <div className="mb-4">
   <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">
     Move to Stage
@@ -471,6 +530,18 @@ const updateLeadStage = async (id, stage) => {
     ))}
   </select>
 </div>
+=======
+            <div className="mb-4">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Move to Stage</div>
+              <select
+                className="input text-[12px]"
+                value={selectedLead.stage}
+                onChange={(e) => updateLeadStage(selectedLead.id, e.target.value)}
+              >
+                {PIPELINE_STAGES.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
 
             <div className="flex gap-2">
               <button className="btn btn-whatsapp flex-1 justify-center"
@@ -514,6 +585,7 @@ const updateLeadStage = async (id, stage) => {
           </div>
         </div>
         <div className="flex gap-2 mt-4">
+<<<<<<< HEAD
      <button
   className="btn btn-primary flex-1 justify-center"
   onClick={async () => {
@@ -530,6 +602,12 @@ const updateLeadStage = async (id, stage) => {
 >
   ✅ Add Lead
 </button>
+=======
+          <button className="btn btn-primary flex-1 justify-center"
+            onClick={() => { addLead(newLead); setShowAdd(false); alert('Lead added with AI score!') }}>
+            ✅ Add Lead
+          </button>
+>>>>>>> 98a5c27041215de0b2297d38a2959e5e90e869ca
           <button className="btn btn-ghost" onClick={() => setShowAdd(false)}>Cancel</button>
         </div>
       </Modal>
