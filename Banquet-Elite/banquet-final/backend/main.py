@@ -1,22 +1,26 @@
 from fastapi import FastAPI
-from routes import leads
-from routes import events
-from routes import kitchen  # NEW
 from fastapi.middleware.cors import CORSMiddleware
-from db import db
+
+from routes.inventory import router as inventory_router
+from routes.leads import router as leads_router
+from routes.kitchen import router as kitchen_router
 
 app = FastAPI()
 
+# ✅ CORS — ONLY ONCE
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # dev mode
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(leads.router)
-app.include_router(events.router)
-app.include_router(kitchen.router)  # NEW
+@app.get("/")
+def root():
+    return {"message": "Banquet API running"}
 
-print(db.list_collection_names())
+# ✅ Include routers
+app.include_router(inventory_router, prefix="/inventory", tags=["Inventory"])
+app.include_router(leads_router, prefix="/leads", tags=["Leads"])
+app.include_router(kitchen_router, prefix="/kitchen", tags=["Kitchen"])
