@@ -4,13 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { portalCredentials } from '../config/portalCredentials'
 
 const PORTAL_META = {
-  owner:     { label: 'Owner',            icon: '🏛',  color: '#c9a84c', route: '/owner' },
-  sales:     { label: 'Sales',            icon: '📈',  color: '#60a5fa', route: '/sales' },
-  kitchen:   { label: 'Kitchen',          icon: '🍽',  color: '#f97316', route: '/kitchen' },
-  inventory: { label: 'Inventory',        icon: '📦',  color: '#a78bfa', route: '/inventory' },
-  property:  { label: 'Property Manager', icon: '🏢',  color: '#34d399', route: '/property' },
-  vendor:    { label: 'Vendor',           icon: '🤝',  color: '#fb7185', route: '/vendor' },
-  finance:   { label: 'Finance',          icon: '💰',  color: '#fbbf24', route: '/finance' },
+  owner:     { label: 'Owner',            icon: '👑', accent: '#8B6B52', accentLight: 'rgba(181, 155, 135, 0.1)',  route: '/owner' },
+  sales:     { label: 'Sales',            icon: '📈', accent: '#b06040', accentLight: 'rgba(217, 177, 161, 0.1)',   route: '/sales' },
+  kitchen:   { label: 'Kitchen',          icon: '🍽', accent: '#9a5a30', accentLight: 'rgba(154,90,48,0.1)',   route: '/kitchen' },
+  inventory: { label: 'Inventory',        icon: '📦', accent: '#6B8B52', accentLight: 'rgba(107,139,82,0.1)',  route: '/inventory' },
+  property:  { label: 'Property Manager', icon: '🏢', accent: '#526B8B', accentLight: 'rgba(82,107,139,0.1)',  route: '/property' },
+  vendor:    { label: 'Vendor',           icon: '🤝', accent: '#7a6B3B', accentLight: 'rgba(122,107,59,0.1)',  route: '/vendor' },
+  finance:   { label: 'Finance',          icon: '💰', accent: '#c9974a', accentLight: 'rgba(201,151,74,0.1)',  route: '/finance' },
 }
 
 export default function PortalLoginCard({ portalKey }) {
@@ -22,14 +22,13 @@ export default function PortalLoginCard({ portalKey }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
-    await new Promise((r) => setTimeout(r, 300))
-
+    await new Promise((r) => setTimeout(r, 320))
     const creds = portalCredentials[portalKey]
     if (id === creds.id && password === creds.password) {
       login(portalKey)
@@ -42,59 +41,73 @@ export default function PortalLoginCard({ portalKey }) {
 
   return (
     <div
-      className="relative rounded-2xl border transition-all duration-300 overflow-hidden group"
       style={{
-        background: 'linear-gradient(145deg, #111520 0%, #161c2a 100%)',
-        borderColor: 'rgba(30,42,62,0.8)',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+        background: 'linear-gradient(145deg, #ffffff 0%, #fdfaf6 100%)',
+        border: '1px solid #e8d5be',
+        borderRadius: 20,
+        boxShadow: '0 2px 12px rgba(107,79,59,0.08), 0 1px 3px rgba(107,79,59,0.06)',
+        transition: 'all 0.25s cubic-bezier(.22,.68,0,1.2)',
+        overflow: 'hidden',
+        position: 'relative',
+        cursor: 'default',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = meta.color + '44'
-        e.currentTarget.style.boxShadow = `0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px ${meta.color}22`
-        e.currentTarget.style.transform = 'translateY(-2px)'
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-4px)'
+        e.currentTarget.style.boxShadow = `0 12px 32px rgba(107,79,59,0.16), 0 2px 8px rgba(107,79,59,0.08), 0 0 0 1px ${meta.accent}30`
+        e.currentTarget.style.borderColor = `${meta.accent}50`
       }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'rgba(30,42,62,0.8)'
-        e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)'
+      onMouseLeave={e => {
         e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.boxShadow = '0 2px 12px rgba(107,79,59,0.08), 0 1px 3px rgba(107,79,59,0.06)'
+        e.currentTarget.style.borderColor = '#e8d5be'
       }}
     >
-      {/* Glow accent top bar */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: `linear-gradient(90deg, transparent, ${meta.color}55, transparent)` }}
-      />
+      {/* Top accent bar */}
+      <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${meta.accent}80, transparent)` }} />
 
-      <div className="p-6">
+      {/* Subtle pattern overlay */}
+      <div style={{
+        position: 'absolute', top: 0, right: 0, width: 120, height: 120,
+        background: `radial-gradient(circle at 80% 20%, ${meta.accentLight} 0%, transparent 70%)`,
+        pointerEvents: 'none',
+      }} />
+
+      <div style={{ padding: '20px 24px 24px' }}>
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-            style={{ background: meta.color + '18', border: `1px solid ${meta.color}33` }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 14, fontSize: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: meta.accentLight, border: `1.5px solid ${meta.accent}25`,
+            flexShrink: 0,
+          }}>
             {meta.icon}
           </div>
           <div>
-            <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium mb-0.5">
+            <div style={{ fontSize: 10, color: '#a08060', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: 3 }}>
               Portal Access
             </div>
-            <h3 className="text-[15px] font-semibold text-white leading-none">
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#3A2518', fontFamily: 'Cormorant Garamond, serif', letterSpacing: '-0.3px' }}>
               {meta.label}
-            </h3>
+            </div>
           </div>
+          <div style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: '#d4c0a8', flexShrink: 0 }} />
         </div>
 
+        {/* Divider */}
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, #e8d5be 30%, #e8d5be 70%, transparent)', marginBottom: 18 }} />
+
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-3">
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1.5 uppercase tracking-wider">
+            <label style={{ display: 'block', fontSize: 10, color: '#a08060', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
               ID / Username
             </label>
             <input
               type="text"
               value={id}
-              onChange={(e) => { setId(e.target.value); setError('') }}
-              placeholder={`${portalKey}@banquet`}
+              onChange={e => { setId(e.target.value); setError('') }}
+              placeholder={`${portalKey}`}
               className="input"
               autoComplete="username"
               required
@@ -102,22 +115,41 @@ export default function PortalLoginCard({ portalKey }) {
           </div>
 
           <div>
-            <label className="block text-[11px] text-slate-500 mb-1.5 uppercase tracking-wider">
+            <label style={{ display: 'block', fontSize: 10, color: '#a08060', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError('') }}
-              placeholder="••••••••"
-              className="input"
-              autoComplete="current-password"
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={password}
+                onChange={e => { setPassword(e.target.value); setError('') }}
+                placeholder="••••••••"
+                className="input"
+                style={{ paddingRight: 40 }}
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                style={{
+                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  color: '#b89878', fontSize: 13,
+                }}
+              >
+                {showPass ? '🙈' : '👁'}
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-[12px]">
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 12px', borderRadius: 10,
+              background: '#fef2f2', border: '1px solid #fecaca',
+              color: '#dc2626', fontSize: 12,
+            }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
                 <path d="M6 1a5 5 0 100 10A5 5 0 006 1zm-.5 2.5h1v3.5h-1V3.5zm0 4.5h1v1h-1V8z"/>
               </svg>
@@ -128,29 +160,36 @@ export default function PortalLoginCard({ portalKey }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed mt-1"
             style={{
+              width: '100%', padding: '11px 16px', borderRadius: 12,
+              fontSize: 13, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
               background: loading
-                ? meta.color + '55'
-                : `linear-gradient(135deg, ${meta.color} 0%, ${meta.color}cc 100%)`,
-              color: '#000',
-              boxShadow: loading ? 'none' : `0 4px 20px ${meta.color}33`,
+                ? 'rgba(115, 84, 61, 0.25)'
+                : `linear-gradient(135deg, ${meta.accent} 0%, ${meta.accent}cc 100%)`,
+              color: loading ? '#8B6B52' : '#fff',
+              border: 'none',
+              boxShadow: loading ? 'none' : `0 4px 16px ${meta.accent}35, inset 0 1px 0 rgba(255,255,255,0.15)`,
+              marginTop: 2,
             }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <svg style={{ animation: 'spin 1s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"/>
+                  <path d="M4 12a8 8 0 018-8v8z" fill="currentColor" opacity="0.75"/>
                 </svg>
                 Verifying…
               </span>
-            ) : (
-              `Sign in to ${meta.label}`
-            )}
+            ) : `Sign in to ${meta.label}`}
           </button>
         </form>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

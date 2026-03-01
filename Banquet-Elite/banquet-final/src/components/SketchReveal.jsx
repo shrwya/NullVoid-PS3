@@ -1,24 +1,35 @@
 import React, { useRef, useEffect, useCallback } from 'react'
 
-/* ────────────────────────────────────────────────────────────────────────────
-   SketchReveal — Vizcom-inspired reveal effect
-   Hover over the canvas to reveal the colored render inside a draggable box
-   ──────────────────────────────────────────────────────────────────────────── */
+/*
+  SketchReveal — Full-page Vizcom-style hero
+  ─────────────────────────────────────────
+  • Sketch (grayscale) photo fills the entire area as base layer
+  • Color photo sits on top, clipped to the reveal box region
+  • A selection box (with corner handles + label) follows the mouse
+  • The box uses position:fixed viewport coords; clip path mirrors them
+    against the container's getBoundingClientRect → pixel-perfect reveal
+*/
+
+const BOX_W = 280
+const BOX_H = 280
 
 export default function SketchReveal({ className = '' }) {
   const containerRef = useRef(null)
   const boxRef       = useRef(null)
   const colorRef     = useRef(null)
-  const mouseRef     = useRef({ x: -400, y: -400 })
-  const posRef       = useRef({ x: -400, y: -400 })
+  const mouseRef     = useRef({ x: -999, y: -999 })
+  const posRef       = useRef({ x: -999, y: -999 })
   const rafRef       = useRef(null)
-  const BOX = { w: 220, h: 220 }
+  const activeRef    = useRef(false)
 
-  const animate = useCallback(() => {
-    const m = mouseRef.current
-    const p = posRef.current
-    p.x += (m.x - BOX.w / 2 - p.x) * 0.1
-    p.y += (m.y - BOX.h / 2 - p.y) * 0.1
+  /* ── smooth spring follow + clip recalc ──────────────────────────── */
+  const tick = useCallback(() => {
+    const m  = mouseRef.current
+    const p  = posRef.current
+
+    // spring lerp — box centre chases mouse
+    p.x += (m.x - BOX_W / 2 - p.x) * 0.12
+    p.y += (m.y - BOX_H / 2 - p.y) * 0.12
 
     if (boxRef.current) {
       boxRef.current.style.left = p.x + 'px'
@@ -26,188 +37,184 @@ export default function SketchReveal({ className = '' }) {
     }
 
     if (colorRef.current && containerRef.current) {
-      const scene = containerRef.current.getBoundingClientRect()
-      const bL = p.x, bR = p.x + BOX.w, bT = p.y, bB = p.y + BOX.h
-      const sL = scene.left, sR = scene.right, sT = scene.top, sB = scene.bottom
-      const clipL = Math.max(0, bL - sL)
-      const clipT = Math.max(0, bT - sT)
-      const clipR = Math.max(0, sR - bR)
-      const clipB = Math.max(0, sB - bB)
-      colorRef.current.style.clipPath = `inset(${clipT}px ${clipR}px ${clipB}px ${clipL}px)`
+      const s  = containerRef.current.getBoundingClientRect()
+      // box edges in viewport px
+      const bL = p.x,          bR = p.x + BOX_W
+      const bT = p.y,          bB = p.y + BOX_H
+      // inset from container edges  (clamp to ≥ 0)
+      const iL = Math.max(0, bL - s.left)
+      const iT = Math.max(0, bT - s.top)
+      const iR = Math.max(0, s.right  - bR)
+      const iB = Math.max(0, s.bottom - bB)
+      colorRef.current.style.clipPath = `inset(${iT}px ${iR}px ${iB}px ${iL}px)`
     }
 
-    rafRef.current = requestAnimationFrame(animate)
+    rafRef.current = requestAnimationFrame(tick)
   }, [])
 
   useEffect(() => {
-    rafRef.current = requestAnimationFrame(animate)
+    rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [animate])
+  }, [tick])
 
-  const onMouseMove = (e) => {
+  /* ── mouse handlers ──────────────────────────────────────────────── */
+  const onMove = (e) => {
     mouseRef.current = { x: e.clientX, y: e.clientY }
-    if (boxRef.current) boxRef.current.style.display = 'block'
+    if (!activeRef.current) {
+      activeRef.current = true
+      if (boxRef.current)   boxRef.current.style.opacity   = '1'
+      if (colorRef.current) colorRef.current.style.opacity = '1'
+    }
   }
-  const onMouseLeave = () => {
-    mouseRef.current = { x: -400, y: -400 }
-    if (boxRef.current) boxRef.current.style.display = 'none'
-    if (colorRef.current) colorRef.current.style.clipPath = 'inset(0 100% 0 0)'
+
+  const onLeave = () => {
+    activeRef.current = false
+    mouseRef.current  = { x: -999, y: -999 }
+    if (boxRef.current)   boxRef.current.style.opacity   = '0'
+    if (colorRef.current) colorRef.current.style.opacity = '0'
   }
 
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-visible select-none cursor-none ${className}`}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
+      className={className}
+      style={{ position: 'relative', overflow: 'hidden', cursor: 'crosshair', userSelect: 'none' }}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
     >
-      {/* ── SKETCH LAYER ── */}
-      <SketchLayer />
 
-      {/* ── COLOR LAYER (clipped) ── */}
+      {/* ── BASE: grayscale sketch ──────────────────────────────────── */}
+      <img
+        src="/images/banquet-sketch.jpg"
+        alt=""
+        draggable={false}
+        style={{
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          objectFit: 'cover', objectPosition: 'center',
+          filter: 'grayscale(100%) contrast(1.15) brightness(0.88)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Fine grid overlay — engineering-sketch feel */}
+      <svg
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%',
+          pointerEvents: 'none', opacity: 0.14 }}
+      >
+        <defs>
+          <pattern id="sr-grid" width="36" height="36" patternUnits="userSpaceOnUse">
+            <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#6B4F3B" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#sr-grid)" />
+      </svg>
+
+      {/* ── COLOR LAYER: clipped to reveal box ─────────────────────── */}
       <div
         ref={colorRef}
-        className="absolute inset-0"
-        style={{ clipPath: 'inset(0 100% 0 0)', transition: 'none' }}
+        style={{
+          position: 'absolute', inset: 0,
+          clipPath: 'inset(0 100% 0 0)',
+          opacity: 0,
+          transition: 'opacity 0.2s ease',
+          pointerEvents: 'none',
+        }}
       >
-        <ColorLayer />
+        <img
+          src="/images/banquet-color.jpg"
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover', objectPosition: 'center',
+          }}
+        />
+        {/* Warm vignette over colour layer */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(74,51,39,0.35) 100%)',
+          pointerEvents: 'none',
+        }} />
       </div>
 
-      {/* ── REVEAL BOX ── */}
+      {/* ── SELECTION BOX (fixed → viewport coords) ────────────────── */}
       <div
         ref={boxRef}
-        className="fixed pointer-events-none z-[9999]"
-        style={{ display: 'none', width: BOX.w, height: BOX.h }}
+        style={{
+          position: 'fixed',
+          width: BOX_W, height: BOX_H,
+          pointerEvents: 'none', zIndex: 9999,
+          opacity: 0,
+          transition: 'opacity 0.18s ease',
+        }}
       >
-        {/* Outer dashed border */}
-        <div className="absolute inset-0 border-2 border-orange-400 rounded-sm" />
-        {/* Corner handles */}
+        {/* Main border */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          border: '1.5px solid #c9974a',
+          boxShadow: '0 0 20px rgba(201,151,74,0.25), inset 0 0 20px rgba(201,151,74,0.05)',
+        }} />
+
+        {/* Corner handles — exactly like Vizcom */}
         {[
-          { top: -3, left: -3 }, { top: -3, right: -3 },
-          { bottom: -3, left: -3 }, { bottom: -3, right: -3 },
-        ].map((s, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-orange-400 rounded-sm"
-            style={s}
-          />
+          { top: -4, left: -4 }, { top: -4, right: -4 },
+          { bottom: -4, left: -4 }, { bottom: -4, right: -4 },
+        ].map((pos, i) => (
+          <div key={i} style={{
+            position: 'absolute', width: 8, height: 8,
+            background: '#c9974a',
+            boxShadow: '0 0 8px rgba(201,151,74,0.8)',
+            ...pos,
+          }} />
         ))}
-        {/* Inner glow */}
-        <div className="absolute inset-0 bg-orange-400/5" />
-        {/* Label */}
-        <div className="absolute -top-6 left-0 text-[10px] text-orange-400 bg-black/60 px-1.5 py-0.5 rounded font-mono">
-          RENDER PREVIEW
+
+        {/* Centre crosshair lines */}
+        <div style={{
+          position: 'absolute', left: '50%', top: 0, bottom: 0,
+          width: 1, background: 'rgba(201,151,74,0.2)',
+          transform: 'translateX(-50%)',
+        }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: 0, right: 0,
+          height: 1, background: 'rgba(201,151,74,0.2)',
+          transform: 'translateY(-50%)',
+        }} />
+
+        {/* Label badge */}
+        <div style={{
+          position: 'absolute', top: -28, left: 0,
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          background: 'rgba(42,21,10,0.82)', backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(201,151,74,0.4)',
+          padding: '4px 10px', borderRadius: 6,
+          fontSize: 9, fontWeight: 700, letterSpacing: '0.14em',
+          textTransform: 'uppercase', color: '#c9974a',
+          fontFamily: 'DM Sans, sans-serif',
+          whiteSpace: 'nowrap',
+        }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%',
+            background: '#c9974a', display: 'inline-block',
+            animation: 'srPulse 1.5s ease-in-out infinite' }} />
+          Venue Preview
         </div>
+
+        {/* Dimension readout (bottom right) */}
+        <div style={{
+          position: 'absolute', bottom: -22, right: 0,
+          fontSize: 8, fontWeight: 600, letterSpacing: '0.1em',
+          color: 'rgba(201,151,74,0.6)', fontFamily: 'DM Sans, sans-serif',
+        }}>
+          {BOX_W} × {BOX_H}
+        </div>
+
+        <style>{`@keyframes srPulse{0%,100%{opacity:1;}50%{opacity:0.3;}}`}</style>
       </div>
+
+      {/* Children (big text, CTAs, etc.) sit on top */}
+      {/* NOTE: parent passes children via className slot only;
+          text overlay is handled in Home.jsx */}
     </div>
-  )
-}
-
-/* ── SVG SKETCH LAYER ─────────────────────────────────────────────────────── */
-function SketchLayer() {
-  return (
-    <svg
-      viewBox="0 0 900 400"
-      className="w-full h-full"
-      style={{ background: 'transparent' }}
-    >
-      {/* Grid */}
-      <g stroke="#2a3850" strokeWidth="0.5" opacity="0.6">
-        {[300, 400, 500, 600, 700].map(x => <line key={x} x1={x} y1={0} x2={x} y2={400} />)}
-        {[120, 200, 280, 320].map(y => <line key={y} x1={0} y1={y} x2={900} y2={y} />)}
-      </g>
-
-      {/* Car sketch */}
-      <g stroke="#94a3b8" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M130 300 Q170 295 210 285 L310 225 L430 200 L590 196 L700 204 L775 236 L808 286 L808 308 Z" />
-        <path d="M310 225 Q355 180 398 170 L534 166 Q594 168 634 192 L700 204" />
-        <path d="M130 300 Q110 306 106 295 Q100 272 128 262 L190 252" />
-        <path d="M808 308 Q826 308 830 290 Q828 264 806 254" />
-        <path d="M320 223 Q352 190 382 178 L428 173 L428 220 Z" strokeWidth="1.2" />
-        <path d="M434 173 L434 220 L548 216 L548 173 Z" strokeWidth="1.2" />
-        <path d="M554 174 L554 215 L624 203 L614 178 Z" strokeWidth="1.2" />
-        <path d="M210 308 Q248 288 285 308 Q280 330 248 335 Q215 332 210 308" />
-        <path d="M638 306 Q676 286 712 306 Q707 330 675 335 Q643 332 638 306" />
-        <line x1="350" y1="168" x2="350" y2="380" stroke="#1e2a3e" strokeWidth="0.8" strokeDasharray="6 4" />
-        <line x1="525" y1="163" x2="525" y2="380" stroke="#1e2a3e" strokeWidth="0.8" strokeDasharray="6 4" />
-      </g>
-      {/* Hatching */}
-      <g stroke="#475569" strokeWidth="0.6" opacity="0.4">
-        {[0,18,36,54].map(o => <line key={o} x1={310+o} y1={295} x2={355+o} y2={250} />)}
-        {[0,18,36].map(o => <line key={o} x1={700+o} y1={260} x2={765+o} y2={230} />)}
-      </g>
-    </svg>
-  )
-}
-
-/* ── SVG COLOR LAYER ──────────────────────────────────────────────────────── */
-function ColorLayer() {
-  return (
-    <svg viewBox="0 0 900 400" className="w-full h-full">
-      <defs>
-        <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#d4843a" />
-          <stop offset="45%" stopColor="#b85e1a" />
-          <stop offset="100%" stopColor="#7a3a0a" />
-        </linearGradient>
-        <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#c87830" />
-          <stop offset="100%" stopColor="#8a4410" />
-        </linearGradient>
-        <radialGradient id="wheel" cx="50%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#555" />
-          <stop offset="100%" stopColor="#111" />
-        </radialGradient>
-        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="rgba(200,230,255,0.65)" />
-          <stop offset="100%" stopColor="rgba(120,180,255,0.25)" />
-        </linearGradient>
-        <filter id="carShadow">
-          <feDropShadow dx="0" dy="8" stdDeviation="14" floodColor="rgba(0,0,0,0.5)" />
-        </filter>
-      </defs>
-
-      <ellipse cx="470" cy="334" rx="310" ry="18" fill="rgba(0,0,0,0.3)" />
-      <g filter="url(#carShadow)">
-        <path d="M130 300 Q170 295 210 285 L310 225 L430 200 L590 196 L700 204 L775 236 L808 286 L808 308 Z" fill="url(#body)" />
-        <path d="M310 225 Q355 180 398 170 L534 166 Q594 168 634 192 L700 204 L590 196 L430 200 Z" fill="url(#roof)" />
-        <path d="M210 285 Q415 265 608 260 L700 270 L700 204 L590 196 L430 200 L310 225 Z" fill="rgba(255,150,50,0.12)" />
-      </g>
-
-      {/* Windows */}
-      <path d="M320 223 Q352 190 382 178 L428 173 L428 220 Z" fill="url(#glass)" stroke="#8a5010" strokeWidth="1.5" />
-      <path d="M434 173 L434 220 L548 216 L548 173 Z" fill="url(#glass)" stroke="#8a5010" strokeWidth="1.5" />
-      <path d="M554 174 L554 215 L624 203 L614 178 Z" fill="url(#glass)" stroke="#8a5010" strokeWidth="1.5" />
-      <path d="M335 210 Q355 193 372 185 L380 180 L366 207 Z" fill="rgba(255,255,255,0.28)" />
-      <path d="M445 196 L448 175 L490 173 L490 197 Z" fill="rgba(255,255,255,0.18)" />
-
-      {/* Bumpers */}
-      <path d="M130 300 Q110 306 106 295 Q100 272 128 262 L190 252 L210 285 Z" fill="#7a3a0a" />
-      <rect x="109" y="277" width="24" height="8" rx="2" fill="#e8a040" />
-      <path d="M808 308 Q826 308 830 290 Q828 264 806 254 L806 282 Z" fill="#7a3a0a" />
-      <rect x="806" y="274" width="20" height="8" rx="2" fill="#e8a040" />
-
-      {/* Wheels */}
-      {[248, 674].map((cx, i) => {
-        const cy = i === 0 ? 322 : 318
-        return (
-          <g key={i}>
-            <circle cx={cx} cy={cy} r={42} fill="url(#wheel)" />
-            <circle cx={cx} cy={cy} r={30} fill="#222" />
-            <circle cx={cx} cy={cy} r={18} fill="#444" />
-            <circle cx={cx} cy={cy} r={7} fill="#666" />
-            <g stroke="#666" strokeWidth="2.5">
-              <line x1={cx} y1={cy - 18} x2={cx} y2={cy + 18} />
-              <line x1={cx - 18} y1={cy} x2={cx + 18} y2={cy} />
-              <line x1={cx - 13} y1={cy - 13} x2={cx + 13} y2={cy + 13} />
-              <line x1={cx + 13} y1={cy - 13} x2={cx - 13} y2={cy + 13} />
-            </g>
-            <path d={`M${cx-30} ${cy-10} Q${cx-18} ${cy-28} ${cx} ${cy-30}`} stroke="rgba(255,255,255,0.18)" strokeWidth="3" fill="none" />
-          </g>
-        )
-      })}
-      {/* Body shine */}
-      <path d="M240 264 Q450 242 655 242 Q705 244 740 254 Q705 238 655 234 Q450 228 240 248 Z" fill="rgba(255,190,80,0.22)" />
-    </svg>
   )
 }

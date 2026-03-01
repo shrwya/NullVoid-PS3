@@ -254,3 +254,18 @@
   .stagger-4 { animation-delay: 0.2s; }
   .stagger-5 { animation-delay: 0.25s; }
 }
+
+.input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e8d5be;
+  background-color: #c9beac;      /* 👈 black background */
+  color: #fff;                 /* 👈 white text */
+  font-size: 13px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: #aaa;                 /* softer placeholder */
+}
